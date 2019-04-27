@@ -1,0 +1,281 @@
+#!/usr/bin/ruby
+#RuGit Installer version 1
+#patched 04/27/19
+#patch fixes:
+#a bug was within the install, when writing the Rugit file, code was left out.
+#changed double quotation reg-expression to single quote expression.
+#fixed the Icon in the .desktop
+
+require 'sudo'
+#=======================================================================
+BEGIN{puts Time.now}
+BEGIN{ puts "Prepping Ruby Update..." ; sleep(1)
+				   system "sudo apt-get install ruby-full" ; sleep(1)
+				   puts "installing required gemfiles..." ; sleep(1)
+				   system "sudo gem install sudo" ; sleep(1) }
+
+
+def $user_input::nil
+end
+
+def uninstall
+ sudo  = Sudo::Wrapper.new
+ sudo.start!
+ rugit_dir = Dir.exists?("/home/#{`echo $USER`.chomp}/RuGit")
+ rugit_rb  = File.exists?("/home/#{`echo $USER`.chomp}/RuGit/RuGit.rb")
+ rugit_desktop = File.exists?("/usr/share/applications/RuGit.desktop")
+	puts "starting Uninstall proccess." ;	sleep(1)
+	puts "Removing .RuGit" ;sleep(1)
+	File.delete("/home/#{`echo $USER`.chomp}/RuGit/RuGit.rb") if rugit_rb == true
+	puts ".RuGit removed from System" ; sleep(1)
+	puts "Removing RuGit Directory" ; sleep(1) 
+	Dir.rmdir("/home/#{`echo $USER`.chomp}/RuGit") if rugit_dir == true
+	puts "Directory Removed from system" ; sleep(1) 
+	Dir.chdir("/usr/share/applications")
+	puts "Removing Rugit.desktop" ; sleep(1)
+	sudo[File].delete("/usr/share/applications/RuGit.desktop") if rugit_desktop == true 
+	sudo.stop! 	
+	
+	puts "RuGit.desktop removed from system" ; sleep(1)
+	puts "RuGit Successfully uninstalled!" ; sleep(1)
+	exit(0)
+	end
+
+def dir_check
+ rugit_dir = Dir.exists?("/home/#{`echo $USER`.chomp}/RuGit")
+ rugit_rb  = File.exists?("/home/#{`echo $USER`.chomp}/RuGit/RuGit.rb")
+ rugit_desktop = File.exists?("/usr/share/applications/RuGit.desktop")
+ if rugit_dir || rugit_rb || rugit_desktop == true
+ puts "Rugit Beta 1.0 files have been found.  Would you like to uninstall?[Y|n]"
+ 
+ loop do
+	print "=====> " ; $user_input = gets.chomp
+	
+	   if $user_input =~ /Y|y/ 
+	   uninstall
+	   $user_input.clear
+	   end
+	   
+	   if $user_input =~ /N|n/
+	   exit_install
+	   $user_input.clear
+	   end
+	   if $user_input  !~ /Y|y|N|n/
+	   invalid_input
+	   $user_input.clear
+	   end
+					 break if $user_input =~ /Y|y|N|n/
+				
+		end
+	end
+ 
+	
+end
+
+def start_install
+	
+	sudo = Sudo::Wrapper.new 
+	
+		a = proc{ puts "STARTING RUGIT INSTALL" ; sleep(1) }
+		 a.call
+		 
+		b = proc{ puts "CHECKING USER LOGIN... " ; sleep(1)  ; 
+				  Dir.chdir("/home/#{`echo $USER`.chomp}")
+				  
+				  puts "Checking Directory " ; sleep(1) } 
+		b.call
+		
+		c = proc{ dir_check
+				  puts "RuGit Directories and Files not found.. Prepping Install" ; sleep(1)
+		          Dir.mkdir("/home/#{`echo $USER`.chomp}/RuGit")
+		          puts "#{"/home/#{`echo $USER`.chomp}/RuGit"} CREATED...  " ; sleep(1)
+				  Dir.chdir("/home/#{`echo $USER`.chomp}/RuGit")
+				  Dir.pwd }
+		c.call	
+			  
+		d = proc{ puts "Writing RuGit Application Files to Directory..." ; sleep(1)
+				  rugit = File.new("RuGit.rb" , "w") ;
+				  rugit.puts( %q^#!/usr/bin/ruby
+#Rugit Alpha version 2.1
+#Rugit Beta version 1.0 (completed 4/14/2019)
+#Version Updates:
+#Version 2.0 includes new right click paste menu for git url entry. was not functional.
+#Version 2.1 patch fixed the paste function.  The Git Url can now be copied to the
+#clipboard and pasted in Rugit's git_entry.
+
+require 'tk'
+#require 'clipboard'
+
+
+class Gui_main 
+	def initialize
+	#-----------------------------------------------------------------------
+	p1 = {'side'=>'left', 'expand' =>1}
+	p2 = {'side'=>'right', 'expand' =>1}
+	p3 = {'padx'=>5, 'pady'=>5, 'side'=>'top', 'expand' =>1}
+	p4 = {'side'=>'bottom', 'expand' =>1}	
+	#-----------------------------------------------------------------------
+	font1 = TkFont.new("size" => 11 , "weight" => 'bold')	
+	#-----------------------------------------------------------------------
+	download  =  proc {git_clone}
+	@git_url  =  TkVariable.new
+	@dir_path =  TkVariable.new
+	@dir_path.value = "/home/#{`echo $USER`.chomp}/"
+	
+	 
+	 
+	
+
+	
+	#-----------------------------------------------------------------------	
+	main_win = TkRoot.new {title "Rugit: Git clone Application"}
+	f1 = TkFrame.new(main_win) {relief "raised" ; pack(p3)}
+	f2 = TkFrame.new(main_win) {pack(p4)}
+	main_win['geometry'] = '500x250-400+150'
+	
+	
+	#-----------------------------------------------------------------------
+	label = TkLabel.new(f1) {
+	borderwidth 5
+	font font1
+	
+	text "Thank you for using Rugit! The Ruby Git Clone App!"; pack(p3) }
+	#-----------------------------------------------------------------------
+	dir_path_lable = TkLabel.new(f1) {text "Save to Directory" ; pack}
+	dir_path_entry = TkEntry.new(f1 , 'textvariable'=>@dir_path) {width 50 ; pack}
+	git_label = TkLabel.new(f1) {text "Git Clone Link(url)";pack }
+	git_entry = TkEntry.new(f1, 'textvariable'=>@git_url) {width 50 ; pack}
+	#-----------------------------------------------------------------------
+	git_button = TkButton.new(f1) {text "Git Clone"; command download ; pack(p1) }
+	button_label1 = TkLabel.new(f1) {text " <--Download" ; pack(p1)}
+	button_label2 = TkLabel.new(f1) {text "clear entry-->" ; pack(p1)}
+	git_clear_button = TkButton.new(f1) {text "Clear git Url"; command {git_entry.delete('0', 'end')}; pack(p1)}
+	
+	exit_button = TkButton.new(f2) {text "Exit"; command {proc exit} ; pack }
+	footnote = TkLabel.new(f2) {text "Rugit Version 2.0" ; pack}
+	footnote2 = TkLabel.new(f2) {text "created by Troy Mallory" ; pack}
+	#------------------------------------------------------------------------
+	
+	#------v2 new code, contextual menu from right click--------------------
+	menu = TkMenu.new(main_win)
+	#menu.add :command , :label => 'Copy'  , :command => proc{system "echo #{@git_url} | xclip -selection -c" }
+	menu.add :command , :label => 'Paste' , :command => proc{@git_url.value = "#{`xclip -selection c -o`.chomp}"}
+		if Tk.windowingsystem == 'aqua'
+			git_entry.bind '2', proc{|x,y| menu.popup(x,y)}, "%X %Y"
+			git_entry.bind 'Control-1', proc{|x,y| menu.popup(x,y)}, "%X %Y"
+		else
+			git_entry.bind '3', proc{|x,y| menu.popup(x,y)}, "%X %Y"
+		end
+	
+	
+	def git_clone
+		 Dir.chdir("#{@dir_path}")
+		 system "git clone #{@git_url}"
+		 
+	 end
+	 
+		
+	  
+		
+    end
+  
+ 
+
+end
+
+Gui_main.new
+Tk.mainloop
+^ ) ;
+		rugit.close 
+		
+		}
+		`chmod +x RuGit.rb`.chomp
+ d.call				  
+ 
+		e = proc{ puts ".RuGit File Created!" ; sleep(1)
+				  puts "Creating RuGit.desktop"
+				  Dir.chdir("/usr/share/applications")
+				  sudo.start!
+				  desktop = sudo[File].new("RuGit.desktop" , "w")
+				  desktop.puts( %Q^[Desktop Entry]
+Encoding=UTF-8
+Version=2.1
+Name=RuGit
+Comment=Ruby Git Clone Application. Alpha ver 2.1/Beta ver 1.0
+Categories=Utility;Development;Network
+Type=Application
+Terminal=false
+Exec=ruby /home/#{`echo $USER`.chomp}/RuGit/RuGit.rb
+Icon=/home/#{`echo $USER`.chomp}/RuGit_Installer/icons/rubyicon.png^ ); 
+desktop.close 
+sudo.stop!
+
+	puts "RuGit.desktop Created!" ; sleep(1)}
+		e.call
+		
+		
+		f = proc{ puts "RuGit Beta Ver. 1.0 Install Success!" ; sleep(1)
+				  puts "Exiting Installer!" ; sleep(1) ; exit(0) }
+		f.call
+		
+		
+end
+
+def exit_install
+	a = proc{puts "now Exiting installer"}
+	a.call
+	exit(0)
+end
+
+def invalid_input
+	a = proc{ puts "Invalid Input. Press Y|y or N|n to start or end Installer. " ; }
+	$user_input.clear
+	a.call
+end
+
+def install_choice
+	loop do
+	print " Continue?...: " ; $user_input = gets.chomp
+
+	   if $user_input =~ /Y|y/ 
+	   start_install
+	   $user_input.clear
+	   end
+	   
+	   if $user_input =~ /N|n/
+	   $user_input.clear
+	   exit_install
+	   end
+	   if $user_input  !~ /Y|y|N|n/
+	   $user_input.clear
+	   invalid_input
+	   end
+					 break if $user_input =~ /Y|y|N|n/
+				
+		end
+	end
+
+#=======================================================================
+
+puts "================================================================="
+puts "----------------RUGIT: RUBY GIT CLONE APPLICATION----------------"
+puts "================================================================="
+puts "                                                                 "
+puts "                WELCOME TO RUGIT INSTALL SCRIPT!                 "
+puts " RuGit was developed to make git clone downloads for people new  "
+puts " to using Debian Linux Operating systems.                        "
+puts " It is a fast and easy GUI application that takes care of the    "
+puts " terminal work for you.                                          "
+puts "																   "
+puts " This Installer is for RuGit Beta 1.0 (Alpha version2.1)         "
+puts " Would you like to continue the Install?                         "
+puts " PRESS Y TO CONTINUE INSTALL                                     "
+puts " PRESS N TO EXIT INSTALL                                         "
+
+#=======================================================================
+
+install_choice	
+	
+   
+   
+
