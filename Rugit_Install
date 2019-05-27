@@ -13,6 +13,7 @@ BEGIN{ puts "Prepping Ruby Update..." ; sleep(1)
 				   system "sudo apt-get install ruby-full" ; sleep(1)
 				   puts "installing required gemfiles..." ; sleep(1)
 				   system "sudo gem install sudo" ; sleep(1) }
+				   system "sudo apt_get install xclip"
 
 
 def $user_input::nil
